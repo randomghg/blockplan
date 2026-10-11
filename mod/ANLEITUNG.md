@@ -1,4 +1,4 @@
-# Blockplan 1.1.0 – Anleitung
+# Blockplan 1.1.1 – Anleitung
 
 ## Update von 1.0.x auf 1.1.0 (einmalig)
 
@@ -8,8 +8,8 @@
 4. In den Ordner klicken, bis du `gradlew.bat` siehst → oben in die Adresszeile `cmd` → Enter.
 5. `gradlew.bat build` eingeben und warten, bis „BUILD SUCCESSFUL“ kommt.
 6. Im `mods`-Ordner deines 26.3-Profils die alte `blockplan-1.0.1.jar` **löschen**.
-7. Die neue `build\libs\blockplan-1.1.0.jar` in den `mods`-Ordner kopieren (**nicht entpacken**).
-8. Minecraft starten, Welt öffnen, im Chat `/blockplan version` eingeben. Dort muss 1.1.0 stehen.
+7. Die neue `build\libs\blockplan-1.1.1.jar` in den `mods`-Ordner kopieren (**nicht entpacken**).
+8. Minecraft starten, Welt öffnen, im Chat `/blockplan version` eingeben. Dort muss 1.1.1 stehen.
 
 Dein Plan und dein Platz bleiben erhalten (die liegen in `config\blockplan`).
 

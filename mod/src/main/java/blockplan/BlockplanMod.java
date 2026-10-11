@@ -103,6 +103,13 @@ public class BlockplanMod implements ModInitializer {
 		d.register(Commands.literal("blockplan")
 				.executes(c -> reply(c, Tracker.summary(), ChatFormatting.AQUA))
 				.then(Commands.literal("web").executes(c -> reply(c, "Website: http://localhost:" + WebServer.PORT + " (nur auf diesem PC, solange die Welt offen ist)", ChatFormatting.AQUA)))
+				.then(Commands.literal("update").executes(c -> {
+					CommandSourceStack src = c.getSource();
+					reply(c, "Suche neue Website auf GitHub …", ChatFormatting.GRAY);
+					Updater.check().thenAccept(r -> src.getServer().execute(() -> src.sendSuccess(() -> Component.literal("Website-Update: " + r).withStyle(ChatFormatting.AQUA), false)));
+					return 1;
+				}))
+				.then(Commands.literal("version").executes(c -> reply(c, "Blockplan " + version() + " · Minecraft " + Assets.mcVersion() + " · Website-Update: " + Updater.lastResult, ChatFormatting.AQUA)))
 				.then(Commands.literal("anker")
 						.then(Commands.literal("hier").executes(c -> {
 							ServerPlayer p = c.getSource().getPlayerOrException();
