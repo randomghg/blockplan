@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "blockplan",
+	"version": "${version}",
+	"name": "Blockplan",
+	"description": "Vergleicht deine Welt live mit einem Bauplan, warnt bei falschen Blöcken und zeigt den Fortschritt im Browser unter http://localhost:8765",
+	"authors": ["Fabian"],
+	"license": "All-Rights-Reserved",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["blockplan.BlockplanMod"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
