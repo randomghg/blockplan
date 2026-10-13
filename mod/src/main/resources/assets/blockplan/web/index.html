@@ -689,7 +689,7 @@ de:{sub:'Schematic reinziehen und du bekommst Materialliste, Rohstoffe, Schichtp
  flyBtn:'Flugmodus (F)',invX:'Links/rechts umkehren',invY:'Hoch/runter umkehren',sens:'Maus-Empfindlichkeit',show3d:'In 3D anzeigen',below:'darunter',
  building3d:p=>`Baue 3D-Ansicht … ${p} %`,no3dFile:'Für die 3D-Ansicht brauchst du eine Schematic-Datei.',noWebgl:'Dein Browser kann hier kein WebGL. Die 3D-Ansicht geht deshalb nicht.',tooBig3d:n=>`Zu viele sichtbare Blöcke für 3D (${n}). Nutze „Bis Schicht“, um weniger zu zeigen.`,
  foot:'Stacks: 64 pro Stack (Schilder und Banner 16). Shulker-Kiste = 27 Stacks. Doppelstufen zählen als 2 Stufen, Türen und Betten einmal. Wasser und Lava stehen nur als Hinweis drin.',
- loaded:'Geladen',example:'Beispiel',reading:f=>`Lese ${f} …`,sampleName:'Beispiel: kleiner Brunnen',listName:n=>`Eingefügte Liste (${n} Sorten)`,badLines:n=>`${n} Zeile${n>1?'n':''} nicht erkannt`,
+ loaded:'Geladen',example:'Beispiel',reading:f=>`Lese ${f} …`,sampleName:'Beispiel: kleiner Brunnen',icNote:'Filter-Trichter (Mitte, unter der Leitung): Slot 1 = 18 Mohn, Slot 2–5 je 1 umbenanntes 64er-Item (z. B. Erde). Obere Kiste = Eingang von der Eisenfarm.',listName:n=>`Eingefügte Liste (${n} Sorten)`,badLines:n=>`${n} Zeile${n>1?'n':''} nicht erkannt`,
  stk:(a,b)=>a?(b?`${a} St. + ${b}`:`${a} St.`):String(b),
  errNbt:'Die Datei ist kein gültiges NBT. Ist es wirklich eine Schematic?',errNotSchem:'Die Datei beginnt nicht wie eine Minecraft-Schematic.',errTooBig:a=>`Der Bau ist zu groß für den Browser (${a}).`,errNoRegions:'Die Litematic enthält keine Bereiche.',errSchemFormat:'Diese Schematic hat ein unbekanntes Format.',errOldSchem:'Das ist eine alte MCEdit-.schematic (vor 1.13). Öffne sie mit WorldEdit oder Litematica und speichere sie als .schem oder .litematic neu.',errUnknown:'Unbekanntes Schematic-Format.'},
 en:{sub:'Drop in a schematic to get the material list, raw materials, layer plan and a 3D view. Everything runs locally in your browser, Minecraft does not need to be running.',
@@ -738,7 +738,7 @@ en:{sub:'Drop in a schematic to get the material list, raw materials, layer plan
  flyBtn:'Fly mode (F)',invX:'Invert left/right',invY:'Invert up/down',sens:'Mouse sensitivity',show3d:'Show in 3D',below:'below',
  building3d:p=>`Building 3D view … ${p} %`,no3dFile:'The 3D view needs a schematic file.',noWebgl:'Your browser cannot run WebGL here, so the 3D view is not available.',tooBig3d:n=>`Too many visible blocks for 3D (${n}). Use “Up to layer” to show fewer.`,
  foot:'Stacks: 64 per stack (signs and banners 16). Shulker box = 27 stacks. Double slabs count as 2 slabs, doors and beds once. Water and lava are listed as a note only.',
- loaded:'Loaded',example:'Example',reading:f=>`Reading ${f} …`,sampleName:'Example: small fountain',listName:n=>`Pasted list (${n} types)`,badLines:n=>`${n} line${n>1?'s':''} not recognized`,
+ loaded:'Loaded',example:'Example',reading:f=>`Reading ${f} …`,sampleName:'Example: small fountain',icNote:'Filter hopper (middle, under the line): slot 1 = 18 poppies, slots 2–5 one renamed 64-stack item each (e.g. dirt). Top chest = input from the iron farm.',listName:n=>`Pasted list (${n} types)`,badLines:n=>`${n} line${n>1?'s':''} not recognized`,
  stk:(a,b)=>a?(b?`${a} st + ${b}`:`${a} st`):String(b),
  errNbt:'The file is not valid NBT. Is it really a schematic?',errNotSchem:'The file does not start like a Minecraft schematic.',errTooBig:a=>`The build is too large for the browser (${a}).`,errNoRegions:'The litematic contains no regions.',errSchemFormat:'This schematic has an unknown format.',errOldSchem:'This is an old MCEdit .schematic (before 1.13). Open it with WorldEdit or Litematica and save it again as .schem or .litematic.',errUnknown:'Unknown schematic format.'}
 };
@@ -974,7 +974,7 @@ $('#buildList').addEventListener('click',async e=>{
     try{
       statusExtra='';
       if(b.kind==='list'){ const {m}=parseList(b.text); await loadList(m,'list'); S.labelKey='listName'; S.labelArg=m.size; initState(); }
-      else if(b.kind==='grid'){ await loadGrid(gridFromSaved(b),b.name,null,false); }
+      else if(b.kind==='grid'){ if(b.id===IRONCRAFTER_ID) statusExtra=` · <span class="muted">${escapeHtml(t('icNote'))}</span>`; await loadGrid(gridFromSaved(b),b.name,null,false); }
       else { await loadGrid(readSchematicBytes(new Uint8Array(b.data)),b.name,null,false); }
       S.buildId=b.id; renderAll(); window.scrollTo({top:$('#stats').offsetTop-20,behavior:'smooth'});
     }catch(err){ setStatus(escapeHtml(errText(err)),true); }
@@ -2532,6 +2532,54 @@ $('#anSave').onclick=async()=>{
   try{ await lvFetch('/api/anchor',{method:'POST',body:JSON.stringify(a)}); m.className='muted'; m.textContent=t('lvSaved'); }catch(e){ m.className='err'; m.textContent=String(e.message||e); }
 };
 
+/* ---- Eingebauter Build: Eisen-Autocrafter + Mohn-Sortierer ---- */
+const IRONCRAFTER_ID='builtin-ironcrafter', IRONCRAFTER_NAME='Eisen-Autocrafter + Mohn-Sortierer';
+function buildIronCrafter(){
+  // x = Osten, z = Süden (im Spiel), y = hoch. Interne z-Werte -4..2, im Raster +4 verschoben.
+  const sx=11,sy=5,sz=7; const B=makeBuilder(sx,sy,sz);
+  const set=(x,y,z,n,p)=>{B.data[(y*sz+(z+4))*sx+x]=B.id('minecraft:'+n,p||{});};
+  const wire=(x,y,z,c)=>set(x,y,z,'redstone_wire',Object.assign({north:'none',south:'none',east:'none',west:'none',power:'0'},c));
+  for(let x=0;x<sx;x++)for(let z=-4;z<=2;z++) set(x,0,z,'smooth_stone');
+  // Eingang: Kiste der Eisenfarm, darunter die Trichterleitung nach Osten
+  set(0,4,1,'chest',{facing:'south',type:'single'});
+  for(let x=0;x<=7;x++) set(x,3,1,'hopper',{facing:'east',enabled:'true'});
+  set(8,3,1,'hopper',{facing:'down',enabled:'true'});
+  // Mohn-Sortierer: Filter-Trichter F (18 Mohn + 4 umbenannte Items), darunter gesperrter Trichter G, darunter Mohn-Kiste
+  set(2,2,1,'hopper',{facing:'south',enabled:'true'});
+  set(2,1,1,'hopper',{facing:'down',enabled:'false'});
+  set(2,0,1,'chest',{facing:'south',type:'single'});
+  set(2,1,0,'stone'); set(2,2,0,'comparator',{facing:'south',mode:'compare',powered:'false'});
+  set(2,1,-1,'stone'); wire(2,2,-1,{north:'side',south:'side'});
+  wire(2,1,-2,{north:'side',south:'up'});
+  set(2,1,-3,'stone');
+  set(2,1,-4,'redstone_wall_torch',{facing:'north',lit:'true'});
+  wire(3,1,-4,{west:'side',east:'side'}); wire(4,1,-4,{west:'side',south:'side'});
+  for(let z=-3;z<=0;z++) wire(4,1,z,{north:'side',south:'side'});
+  wire(4,1,1,{north:'side',west:'side'}); wire(3,1,1,{east:'side',west:'side'});
+  // Crafter: Trichter von oben, Ausgabe nach Süden in die Eisenblock-Kiste
+  set(8,1,1,'stone'); set(8,2,1,'crafter',{orientation:'south_up',crafting:'false',triggered:'false'});
+  set(8,1,2,'stone'); set(8,2,2,'chest',{facing:'south',type:'single'});
+  set(9,1,1,'stone'); set(9,2,1,'comparator',{facing:'west',mode:'compare',powered:'false'});
+  set(8,2,0,'stone');
+  // 9 Redstone: kommt erst bei 9 belegten Slots (Signal 9) am Block neben dem Crafter an
+  const loop=[[10,1],[10,0],[10,-1],[10,-2],[10,-3],[9,-3],[8,-3],[8,-2],[8,-1]];
+  loop.forEach(([x,z],i)=>{
+    set(x,1,z,'stone');
+    const c={}, link=(q)=>{ if(!q) return; const dx=q[0]-x,dz=q[1]-z; c[dx>0?'east':dx<0?'west':dz>0?'south':'north']='side'; };
+    if(i===0) c.west='side'; link(loop[i-1]); link(loop[i+1]); if(i===loop.length-1) c.south='side';
+    wire(x,2,z,c);
+  });
+  return B;
+}
+async function ensureBuiltinBuilds(){
+  if(store.get('blockplan:builtin:'+IRONCRAFTER_ID)||BUILDS.some(b=>b.id===IRONCRAFTER_ID)) return;
+  const B=buildIronCrafter(); let total=0;
+  for(let i=0;i<B.data.length;i++){ const e=B.palette[B.data[i]]; if(B.data[i]) for(const [id,n] of itemsFor(e.name,e.props)) if(!id.startsWith('#')) total+=n; }
+  const bytes=new Uint8Array(B.data.buffer,B.data.byteOffset,B.data.byteLength);
+  BUILDS.push({id:IRONCRAFTER_ID,kind:'grid',name:IRONCRAFTER_NAME,sx:B.sx,sy:B.sy,sz:B.sz,palette:B.palette,data:pako.deflate(bytes,{level:1}),total,key:'blockplan:'+IRONCRAFTER_NAME+':'+total,date:Date.now()});
+  await idb.set('builds',BUILDS); store.set('blockplan:builtin:'+IRONCRAFTER_ID,1); renderBuilds();
+}
+
 /* ---- Beispiel: kleiner Brunnen ---- */
 function sampleFountain(){
   const R=9,sx=2*R+3,sz=2*R+3,sy=14; const B=makeBuilder(sx,sy,sz); const cx=R+1,cz=R+1;
@@ -2562,6 +2610,7 @@ $('#sampleBtn').onclick=loadSample;
   try{ const tx=await idb.get('tex'); if(tx&&Object.keys(tx).length){TEX=tx;TEXSRC=(await idb.get('texsrc'))||'';NAMES=(await idb.get('names'))||null;MODELS=(await idb.get('models'))||null;} }catch(e){}
   renderTexState();
   await initBuilds();
+  try{ await ensureBuiltinBuilds(); }catch(e){ console.error(e); }
   await loadSample();
   await liveInit();
 })();
