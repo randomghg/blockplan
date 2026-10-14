@@ -2492,8 +2492,11 @@ function liveRender(){
   $('#lvDot').classList.toggle('on',ok); $('#lvState').textContent='· '+(ok?t('lvOn'):t('lvOff'));
   $('#lvPlan').textContent=st.plan?t('lvPlanInfo',st.plan.name,`${st.plan.sx} × ${st.plan.sy} × ${st.plan.sz}`,fmt(st.plan.req)):t('lvNoPlan');
   const a=st.anchor;
-  for(const [id,k] of [['#anX','x'],['#anY','y'],['#anZ','z']]) if(document.activeElement!==$(id)) $(id).value=a?a[k]:'';
-  if(document.activeElement!==$('#anR')) $('#anR').value=a?a.rot:0;
+  // Felder nur füllen, wenn sich der gespeicherte Platz geändert hat, sonst würden Eingaben jede Sekunde gelöscht
+  const aKey=JSON.stringify(a||null);
+  if(LV.anShown!==aKey){ LV.anShown=aKey;
+    for(const [id,k] of [['#anX','x'],['#anY','y'],['#anZ','z']]) if(document.activeElement!==$(id)) $(id).value=a?a[k]:'';
+    if(document.activeElement!==$('#anR')) $('#anR').value=a?a.rot:0; }
   const c=st.counts||{}, req=st.plan?st.plan.req:0, pct=req?(c.correct||0)/req*100:0;
   $('#lvCounts').innerHTML=st.plan?`<span>${t('lvCorrect')}</span><b>${fmt(c.correct||0)}</b><span>${t('lvWrongN')}</span><b style="color:var(--copper)">${fmt(c.wrong||0)}</b><span>${t('lvMissing')}</span><b>${fmt(c.missing||0)}</b><span>${t('lvUnknown')}</span><b>${fmt(c.unknown||0)}</b><span>${t('lvDone')}</span><b>${pct.toLocaleString(loc(),{maximumFractionDigits:2})} %</b>`:'';
   $('#lvPlayers').textContent=(st.players||[]).length?(st.players||[]).map(p=>`${p.name}: ${Math.floor(p.x)} ${Math.floor(p.y)} ${Math.floor(p.z)}${p.overworld?'':' ('+t('lvOtherDim')+')'}`).join(' · '):t('lvNoPlayers');
