@@ -40,8 +40,8 @@ public class BlockplanMod implements ModInitializer {
 			WebServer.start(server);
 			Updater.check();
 		});
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> WebServer.stop());
-		ServerTickEvents.END_SERVER_TICK.register(Tracker::tick);
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> { saveTouched(); WebServer.stop(); });
+		ServerTickEvents.END_SERVER_TICK.register(server -> { Tracker.tick(server); if (server.getTickCount() % 6000 == 0) saveTouched(); });
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			if (!level.isClientSide() && player instanceof ServerPlayer sp) {
 				BlockPos p = hit.getBlockPos();
@@ -69,9 +69,39 @@ public class BlockplanMod implements ModInitializer {
 				JsonObject o = JsonParser.parseString(Files.readString(af, StandardCharsets.UTF_8)).getAsJsonObject();
 				Tracker.setAnchor(new Tracker.Anchor(o.get("x").getAsInt(), o.get("y").getAsInt(), o.get("z").getAsInt(), o.get("rot").getAsInt()));
 			}
+			loadTouched();
 		} catch (Exception e) {
 			LOG.error("Blockplan: gespeicherter Plan konnte nicht geladen werden", e);
 		}
+	}
+
+	/** Merkt sich, wo du schon gebaut hast (damit natürliche Blöcke dort streng geprüft werden). */
+	static void saveTouched() {
+		if (!Tracker.touchedDirty || Tracker.plan == null || Tracker.anchor == null) return;
+		try {
+			Files.createDirectories(dir);
+			Tracker.Anchor a = Tracker.anchor;
+			String head = Tracker.plan.cells.length + " " + a.x() + " " + a.y() + " " + a.z() + " " + a.rot() + "\n";
+			byte[] bits = Tracker.touched.toByteArray(), h = head.getBytes(StandardCharsets.UTF_8), out = new byte[h.length + bits.length];
+			System.arraycopy(h, 0, out, 0, h.length); System.arraycopy(bits, 0, out, h.length, bits.length);
+			Files.write(dir.resolve("gesetzt.bin"), out);
+			Tracker.touchedDirty = false;
+		} catch (Exception e) { LOG.error("Blockplan: gesetzt.bin konnte nicht gespeichert werden", e); }
+	}
+
+	static void loadTouched() {
+		try {
+			Path f = dir.resolve("gesetzt.bin");
+			if (!Files.exists(f) || Tracker.plan == null || Tracker.anchor == null) return;
+			byte[] all = Files.readAllBytes(f);
+			int nl = 0; while (nl < all.length && all[nl] != '\n') nl++;
+			String[] h = new String(all, 0, nl, StandardCharsets.UTF_8).trim().split(" ");
+			Tracker.Anchor a = Tracker.anchor;
+			if (h.length != 5 || Integer.parseInt(h[0]) != Tracker.plan.cells.length || Integer.parseInt(h[1]) != a.x() || Integer.parseInt(h[2]) != a.y()
+					|| Integer.parseInt(h[3]) != a.z() || Integer.parseInt(h[4]) != a.rot()) return;
+			Tracker.touched = java.util.BitSet.valueOf(java.util.Arrays.copyOfRange(all, nl + 1, all.length));
+			Tracker.touchedDirty = false;
+		} catch (Exception e) { LOG.error("Blockplan: gesetzt.bin konnte nicht gelesen werden", e); }
 	}
 
 	static void savePlan(byte[] raw) {

@@ -31,6 +31,22 @@ public final class Tracker {
 	private static final Set<String> EMPTY = Set.of("minecraft:air", "minecraft:cave_air", "minecraft:void_air", "minecraft:water", "minecraft:lava",
 			"minecraft:seagrass", "minecraft:tall_seagrass", "minecraft:kelp", "minecraft:kelp_plant", "minecraft:short_grass", "minecraft:tall_grass", "minecraft:bubble_column");
 
+	/** Natürliche Blöcke aus der Weltgenerierung. Stehen sie an einer Stelle, die noch niemand angefasst hat,
+	 *  zählt das als „fehlt noch“ statt „falsch“ (Meeresboden, Höhlen, Untergrund). */
+	private static final Set<String> NATURAL = Set.of("stone", "deepslate", "tuff", "granite", "diorite", "andesite", "calcite",
+			"dirt", "coarse_dirt", "rooted_dirt", "grass_block", "podzol", "mycelium", "gravel", "sand", "red_sand", "suspicious_sand",
+			"suspicious_gravel", "clay", "sandstone", "red_sandstone", "mud", "moss_block", "dripstone_block", "pointed_dripstone",
+			"smooth_basalt", "amethyst_block", "budding_amethyst", "magma_block", "obsidian", "bedrock", "cobblestone",
+			"mossy_cobblestone", "cobbled_deepslate", "sea_pickle", "glow_lichen", "prismarine", "prismarine_bricks", "dark_prismarine",
+			"sea_lantern", "wet_sponge", "packed_ice", "ice", "blue_ice", "snow_block", "powder_snow", "lava");
+	static boolean natural(String id) {
+		String n = id.startsWith("minecraft:") ? id.substring(10) : id;
+		return NATURAL.contains(n) || n.endsWith("_ore") || n.startsWith("infested_") || n.endsWith("_coral_block") || n.endsWith("_coral") || n.endsWith("_coral_fan");
+	}
+	/** Stellen, an denen ein Spieler gebaut oder abgebaut hat. Dort wird streng geprüft. */
+	static java.util.BitSet touched = new java.util.BitSet();
+	static volatile boolean touchedDirty;
+
 	public record Anchor(int x, int y, int z, int rot) {}
 
 	static volatile Plan plan;
@@ -51,6 +67,7 @@ public final class Tracker {
 		plan = p;
 		status = new byte[p == null ? 0 : p.cells.length];
 		counts[0] = status.length; counts[1] = counts[2] = counts[3] = 0;
+		touched = new java.util.BitSet(status.length); touchedDirty = true;
 		scanPos = 0; version++;
 	}
 
@@ -119,7 +136,7 @@ public final class Tracker {
 	static int evaluate(Plan p, int i, BlockState s, int rot) {
 		String id = idOf(s);
 		if (EMPTY.contains(id) && !id.equals(p.blockId[p.pal[i]])) return MISSING;
-		if (!id.equals(p.blockId[p.pal[i]])) return WRONG;
+		if (!id.equals(p.blockId[p.pal[i]])) return (!touched.get(i) && natural(id)) ? MISSING : WRONG;
 		Map<String, String> want = p.props[p.pal[i]];
 		if (want.isEmpty()) return CORRECT;
 		Map<String, String> have = null;
@@ -207,6 +224,7 @@ public final class Tracker {
 			return;
 		}
 		int before = status[i];
+		if (!touched.get(i)) { touched.set(i); touchedDirty = true; }
 		int st = evaluate(p, i, s, a.rot);
 		setStatus(i, st);
 		if (quiet) return;
