@@ -991,7 +991,7 @@ function cssRgb(v){const m=getComputedStyle(document.documentElement).getPropert
 function renderLayers(){
   const w=$('#layWrap');
   if(!S.grid){w.innerHTML=`<div class="stage empty">${t('layNeedFile')}</div>`;return;}
-  if(PV.grid!==S.grid){ PV.grid=S.grid; PV.zoom=0; PV.top=new Map(); PV.baseKey=''; PV.measure=null; }
+  if(PV.grid!==S.grid||PV.rot!==vRot()){ PV.grid=S.grid; PV.rot=vRot(); PV.zoom=0; PV.top=new Map(); PV.baseKey=''; PV.measure=null; PV.mark=null; }
   const n=S.maxY-S.minY+1, o=offOf();
   w.innerHTML=`<div class="layers">
     <div class="stage" id="stage2d">
@@ -1077,31 +1077,31 @@ function computeTop(limit){
   PV.top.set(limit,top); return top;
 }
 function buildBase(){
-  const g=S.grid,L=g.sx*g.sz,y=S.layer,bg=cssRgb('--sunken'),D=g.data,R=S.renderable,rgb=S.rgb;
-  const img=new ImageData(g.sx,g.sz),d=img.data,cellA=new Uint16Array(L),cellF=new Float32Array(L);
+  const g=S.grid,L=g.sx*g.sz,y=S.layer,bg=cssRgb('--sunken'),D=g.data,R=S.renderable,rgb=S.rgb,[VW,VH]=rotSize(),VM=vMap();
+  const img=new ImageData(VW,VH),d=img.data,cellA=new Uint16Array(L),cellF=new Float32Array(L);
   if(PV.mode==='top'){
     const top=computeTop(y), span=Math.max(1,y-S.minY);
-    for(let i=0;i<L;i++){const ty=top[i],j=i*4; let r=bg[0],gg=bg[1],b=bg[2];
-      if(ty>=0){const a=D[ty*L+i],c=rgb[a],f=.55+.45*Math.min(1,Math.max(0,(ty-S.minY)/span)); cellA[i]=a; cellF[i]=f; r=c[0]*f;gg=c[1]*f;b=c[2]*f;}
+    for(let k=0;k<L;k++){const i=VM[k],ty=top[i],j=k*4; let r=bg[0],gg=bg[1],b=bg[2];
+      if(ty>=0){const a=D[ty*L+i],c=rgb[a],f=.55+.45*Math.min(1,Math.max(0,(ty-S.minY)/span)); cellA[k]=a; cellF[k]=f; r=c[0]*f;gg=c[1]*f;b=c[2]*f;}
       d[j]=r;d[j+1]=gg;d[j+2]=b;d[j+3]=255;}
   } else {
     const o=y*L, below=($('#lGhost').checked&&y>0)?computeTop(y-1):null, ls=layerStatus(y);
-    for(let i=0;i<L;i++){const a=D[o+i],j=i*4; let r=bg[0],gg=bg[1],b=bg[2];
-      if(a&&R[a]){const c=rgb[a]; r=c[0];gg=c[1];b=c[2]; cellA[i]=a; cellF[i]=1;
-        if(ls){const q=ls[i]; if(q===1){const f=.35; r=r*f+bg[0]*(1-f); gg=gg*f+bg[1]*(1-f); b=b*f+bg[2]*(1-f); cellF[i]=.35;} else if(q===3){r=r*.4+200*.6; gg=gg*.4+40*.6; b=b*.4+40*.6; cellF[i]=3;}}}
+    for(let k=0;k<L;k++){const i=VM[k],a=D[o+i],j=k*4; let r=bg[0],gg=bg[1],b=bg[2];
+      if(a&&R[a]){const c=rgb[a]; r=c[0];gg=c[1];b=c[2]; cellA[k]=a; cellF[k]=1;
+        if(ls){const q=ls[i]; if(q===1){const f=.35; r=r*f+bg[0]*(1-f); gg=gg*f+bg[1]*(1-f); b=b*f+bg[2]*(1-f); cellF[k]=.35;} else if(q===3){r=r*.4+200*.6; gg=gg*.4+40*.6; b=b*.4+40*.6; cellF[k]=3;}}}
       else if(below&&below[i]>=0){const by=below[i],a2=D[by*L+i],c=rgb[a2],f=Math.max(.18,.5-.035*(y-1-by));
-        r=c[0]*f+bg[0]*(1-f); gg=c[1]*f+bg[1]*(1-f); b=c[2]*f+bg[2]*(1-f); cellA[i]=a2; cellF[i]=f;}
+        r=c[0]*f+bg[0]*(1-f); gg=c[1]*f+bg[1]*(1-f); b=c[2]*f+bg[2]*(1-f); cellA[k]=a2; cellF[k]=f;}
       d[j]=r;d[j+1]=gg;d[j+2]=b;d[j+3]=255;}
   }
   if(!PV.base) PV.base=document.createElement('canvas');
-  PV.base.width=g.sx; PV.base.height=g.sz; PV.base.getContext('2d').putImageData(img,0,0);
+  PV.base.width=VW; PV.base.height=VH; PV.base.getContext('2d').putImageData(img,0,0);
   PV.cellA=cellA; PV.cellF=cellF;
 }
 function planBox(){ const b=$('#plan'); return b?{W:b.clientWidth,H:b.clientHeight}:{W:0,H:0}; }
 function fitPlan(){
-  const g=S.grid,{W,H}=planBox(); if(!W||!H) return;
-  PV.zoom=Math.max(.05,Math.min((W-56)/g.sx,(H-34)/g.sz,40));
-  PV.cx=g.sx/2-20/PV.zoom; PV.cz=g.sz/2-9/PV.zoom;
+  const [VW,VH]=rotSize(),{W,H}=planBox(); if(!W||!H) return;
+  PV.zoom=Math.max(.05,Math.min((W-56)/VW,(H-34)/VH,40));
+  PV.cx=VW/2-20/PV.zoom; PV.cz=VH/2-9/PV.zoom;
 }
 function zoomAt(mx,my,f){
   const {W,H}=planBox(); if(!W) return; const z=PV.zoom;
@@ -1109,30 +1109,30 @@ function zoomAt(mx,my,f){
   PV.cx=wx-(mx-W/2)/nz; PV.cz=wz-(my-H/2)/nz; PV.zoom=nz; reqPlan();
 }
 function cellAt(mx,my,clamp){
-  const g=S.grid,{W,H}=planBox(),z=PV.zoom; let x=Math.floor((mx-(W/2-PV.cx*z))/z), y=Math.floor((my-(H/2-PV.cz*z))/z);
-  if(clamp){x=Math.max(0,Math.min(g.sx-1,x));y=Math.max(0,Math.min(g.sz-1,y));}
-  else if(x<0||y<0||x>=g.sx||y>=g.sz) return null;
+  const [VW,VH]=rotSize(),{W,H}=planBox(),z=PV.zoom; let x=Math.floor((mx-(W/2-PV.cx*z))/z), y=Math.floor((my-(H/2-PV.cz*z))/z);
+  if(clamp){x=Math.max(0,Math.min(VW-1,x));y=Math.max(0,Math.min(VH-1,y));}
+  else if(x<0||y<0||x>=VW||y>=VH) return null;
   return [x,y];
 }
 function drawPlan(){
   PV.raf=0;
   const cv=$('#cv'); if(!cv||!S||!S.grid) return;
-  const g=S.grid,{W,H}=planBox(); if(!W||!H) return;
+  const g=S.grid,[VW,VH]=rotSize(),{W,H}=planBox(); if(!W||!H) return;
   const dpr=window.devicePixelRatio||1;
   if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
   if(!PV.zoom) fitPlan();
   const cs=getComputedStyle(document.documentElement), col=v=>cs.getPropertyValue(v).trim();
-  const key=PV.mode+'|'+S.layer+'|'+$('#lGhost').checked+'|'+col('--sunken');
+  const key=PV.mode+'|'+S.layer+'|'+$('#lGhost').checked+'|'+col('--sunken')+'|'+vRot();
   if(PV.baseKey!==key){ buildBase(); PV.baseKey=key; }
   const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); c.imageSmoothingEnabled=false;
   c.fillStyle=col('--sunken'); c.fillRect(0,0,W,H);
   const z=PV.zoom, ox=W/2-PV.cx*z, oz=H/2-PV.cz*z;
-  c.drawImage(PV.base,ox,oz,g.sx*z,g.sz*z);
-  const x0=Math.max(0,Math.floor(-ox/z)), x1=Math.min(g.sx,Math.ceil((W-ox)/z)), z0=Math.max(0,Math.floor(-oz/z)), z1=Math.min(g.sz,Math.ceil((H-oz)/z));
+  c.drawImage(PV.base,ox,oz,VW*z,VH*z);
+  const x0=Math.max(0,Math.floor(-ox/z)), x1=Math.min(VW,Math.ceil((W-ox)/z)), z0=Math.max(0,Math.floor(-oz/z)), z1=Math.min(VH,Math.ceil((H-oz)/z));
   if(TEX&&S.faces.length&&z>=8){
     const bgc=col('--sunken');
     for(let zz=z0;zz<z1;zz++)for(let xx=x0;xx<x1;xx++){
-      const i=zz*g.sx+xx,a=PV.cellA[i]; if(!a)continue; const f=S.faces[a]; if(!f)continue;
+      const i=zz*VW+xx,a=PV.cellA[i]; if(!a)continue; const f=S.faces[a]; if(!f)continue;
       const px=ox+xx*z, pz=oz+zz*z, F=PV.cellF[i], s=z+.5;
       if(PV.mode==='top'){ c.globalAlpha=1; c.drawImage(f.top,px,pz,s,s); if(F<1){c.globalAlpha=1-F; c.fillStyle='#000'; c.fillRect(px,pz,s,s);} }
       else if(F===3){ c.globalAlpha=1; c.drawImage(f.top,px,pz,s,s); c.globalAlpha=.55; c.fillStyle='#c82828'; c.fillRect(px,pz,s,s); }
@@ -1142,16 +1142,16 @@ function drawPlan(){
     c.globalAlpha=1;
   }
   if(z>=6){ c.strokeStyle='rgba(0,0,0,.13)'; c.lineWidth=1; c.beginPath();
-    const ya=Math.max(0,oz), yb=Math.min(H,oz+g.sz*z), xa=Math.max(0,ox), xb=Math.min(W,ox+g.sx*z);
+    const ya=Math.max(0,oz), yb=Math.min(H,oz+VH*z), xa=Math.max(0,ox), xb=Math.min(W,ox+VW*z);
     for(let xx=x0;xx<=x1;xx++){const px=Math.round(ox+xx*z)+.5; c.moveTo(px,ya); c.lineTo(px,yb);}
     for(let zz=z0;zz<=z1;zz++){const pz=Math.round(oz+zz*z)+.5; c.moveTo(xa,pz); c.lineTo(xb,pz);}
     c.stroke(); }
   if($('#lChunks').checked){ const o=offOf(); c.strokeStyle=col('--copper'); c.globalAlpha=.75; c.lineWidth=1.5; c.beginPath();
-    const ya=Math.max(0,oz), yb=Math.min(H,oz+g.sz*z), xa=Math.max(0,ox), xb=Math.min(W,ox+g.sx*z);
+    const ya=Math.max(0,oz), yb=Math.min(H,oz+VH*z), xa=Math.max(0,ox), xb=Math.min(W,ox+VW*z);
     for(let xx=x0;xx<=x1;xx++) if((((xx+o.x)%16)+16)%16===0){const px=Math.round(ox+xx*z)+.5; c.moveTo(px,ya); c.lineTo(px,yb);}
     for(let zz=z0;zz<=z1;zz++) if((((zz+o.z)%16)+16)%16===0){const pz=Math.round(oz+zz*z)+.5; c.moveTo(xa,pz); c.lineTo(xb,pz);}
     c.stroke(); c.globalAlpha=1; }
-  c.strokeStyle=col('--muted'); c.lineWidth=1; c.strokeRect(Math.round(ox)+.5,Math.round(oz)+.5,Math.round(g.sx*z),Math.round(g.sz*z));
+  c.strokeStyle=col('--muted'); c.lineWidth=1; c.strokeRect(Math.round(ox)+.5,Math.round(oz)+.5,Math.round(VW*z),Math.round(VH*z));
   const m=PV.measure, lab=$('#mLabel');
   if(m){
     const ax=ox+(m.a[0]+.5)*z, az=oz+(m.a[1]+.5)*z, bx=ox+(m.b[0]+.5)*z, bz=oz+(m.b[1]+.5)*z;
@@ -1166,7 +1166,8 @@ function drawPlan(){
   $('#mClear').hidden=!m;
   if(LV.on&&LV.players.length&&S.off){
     c.font='12px '+(col('--f-body')||'sans-serif'); c.textBaseline='bottom';
-    for(const pl of LV.players){ if(!pl.overworld) continue; const [lx,lz]=wToLocal(pl.x,pl.z), px=ox+lx*z, pz=oz+lz*z;
+    const po=offOf();
+    for(const pl of LV.players){ if(!pl.overworld) continue; const px=ox+(pl.x-po.x)*z, pz=oz+(pl.z-po.z)*z;
       if(px<-20||pz<-20||px>W+20||pz>H+20) continue;
       c.fillStyle='#ffffff'; c.beginPath(); c.arc(px,pz,6,0,Math.PI*2); c.fill(); c.fillStyle='#2a6cd6'; c.beginPath(); c.arc(px,pz,4.5,0,Math.PI*2); c.fill();
       const tw=c.measureText(pl.name).width+10; c.fillStyle='rgba(0,0,0,.65)'; c.fillRect(px-tw/2,pz-26,tw,18); c.fillStyle='#fff'; c.fillText(pl.name,px-tw/2+5,pz-11); }
@@ -1175,7 +1176,7 @@ function drawPlan(){
   drawRulers(c,W,H,ox,oz,z,col);
 }
 function drawRulers(c,W,H,ox,oz,z,col){
-  const o0=offOf(), o=(o0.rot||0)?{x:0,y:0,z:0}:o0, st=[1,2,4,8,16,32,64,128,256,512,1024,2048,4096].find(s=>s*z>=56)||8192;
+  const o=offOf(), st=[1,2,4,8,16,32,64,128,256,512,1024,2048,4096].find(s=>s*z>=56)||8192;
   c.fillStyle=col('--surface'); c.fillRect(0,0,W,18); c.fillRect(0,18,40,H-18); c.fillStyle=col('--line'); c.fillRect(0,18,W,1); c.fillRect(40,18,1,H-18);
   c.fillStyle=col('--muted'); c.font='10.5px '+(col('--f-mono')||'monospace');
   c.textBaseline='top';
@@ -1183,18 +1184,18 @@ function drawRulers(c,W,H,ox,oz,z,col){
   for(let wx=Math.ceil(wx0/st)*st; wx<=wx1; wx+=st){ const px=ox+(wx-o.x)*z; if(px<40)continue; c.fillRect(Math.round(px),12,1,6); c.fillText(String(wx),px+3,3); }
   const wz0=Math.floor((18-oz)/z)+o.z, wz1=Math.ceil((H-oz)/z)+o.z;
   for(let wz=Math.ceil(wz0/st)*st; wz<=wz1; wz+=st){ const pz=oz+(wz-o.z)*z; if(pz<18)continue; c.fillRect(34,Math.round(pz),6,1); c.fillText(String(wz),3,pz+2); }
-  c.fillText((o0.rot||0)?t('local'):'X / Z',3,3);
+  c.fillText('X / Z',3,3);
 }
 function showPlanTip(mx,my){
   const tip=$('#tip'), g=S.grid, p=cellAt(mx,my);
   if(!p){tip.hidden=true;return;}
-  const w0=wpos(p[0],0,p[1]); $('#pRead').textContent=`X ${w0[0]} · Z ${w0[2]}`;
-  const i=p[1]*g.sx+p[0], a=PV.cellA&&PV.cellA[i]; if(!a){tip.hidden=true;return;}
+  const lp=v2l(p[0],p[1]), w0=wpos(lp[0],0,lp[1]); $('#pRead').textContent=`X ${w0[0]} · Z ${w0[2]}`;
+  const i=lp[1]*g.sx+lp[0], a=PV.cellA&&PV.cellA[p[1]*rotSize()[0]+p[0]]; if(!a){tip.hidden=true;return;}
   const L=g.sx*g.sz; let y, under=false;
   if(PV.mode==='top') y=computeTop(S.layer)[i];
   else if(g.data[S.layer*L+i]===a) y=S.layer;
   else { y=computeTop(S.layer-1)[i]; under=true; }
-  const w=wpos(p[0],y,p[1]), ls=layerStatus(S.layer), q=(PV.mode==='layer'&&!under&&ls)?ls[i]:0;
+  const w=wpos(lp[0],y,lp[1]), ls=layerStatus(S.layer), q=(PV.mode==='layer'&&!under&&ls)?ls[i]:0;
   tip.textContent=`${pretty(g.palette[a].name)} · X ${w[0]} Y ${w[1]} Z ${w[2]}${under?' · '+t('below'):''}${q===1?' · '+t('lvMissing'):q===2?' · ✓':q===3?' · ✗ '+t('lvWrongN'):''}`;
   tip.hidden=false;
   const {W}=planBox(); tip.style.left=Math.min(mx+14,Math.max(4,W-tip.offsetWidth-4))+'px'; tip.style.top=(my+16)+'px';
@@ -1223,7 +1224,7 @@ function bindPlan(cv){
   const end=e=>{ PV.ptr.delete(e.pointerId); if(PV.ptr.size<2) PV.pinch=0; if(!PV.ptr.size) PV.drag=null; };
   cv.addEventListener('pointerup',e=>{ const d=PV.drag;
     if(d&&d.type==='mark'&&PV.mark){ end(e); objFormOpen(PV.mark); return; }
-    if(d&&d.type==='pan'&&!d.moved&&e.button===0&&PV.ptr.size===1){ const p=cellAt(e.offsetX,e.offsetY); if(p){ const i=objAtPlan(p[0],p[1]); if(i>=0){ end(e); openObj(i); return; } } }
+    if(d&&d.type==='pan'&&!d.moved&&e.button===0&&PV.ptr.size===1){ const p=cellAt(e.offsetX,e.offsetY); if(p){ const lp=v2l(p[0],p[1]), i=objAtPlan(lp[0],lp[1]); if(i>=0){ end(e); openObj(i); return; } } }
     end(e); }); cv.addEventListener('pointercancel',end);
   cv.addEventListener('pointerleave',()=>{ if(!PV.drag) $('#tip').hidden=true; });
   cv.addEventListener('wheel',e=>{e.preventDefault(); zoomAt(e.offsetX,e.offsetY,Math.pow(1.0018,-e.deltaY));},{passive:false});
@@ -1661,7 +1662,7 @@ async function build3D(){
   V3.root=new THREE.Group(); scene.add(V3.root); V3.scene=scene;
   V3.cam.far=span*5+300; V3.cam.updateProjectionMatrix();
   V3.frame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(g.sx,1,g.sz)),new THREE.LineBasicMaterial({color:0xd8875f,fog:false}));
-  V3.frame.visible=false; scene.add(V3.frame);
+  V3.frame.visible=false; V3.root.add(V3.frame);
   const list=[];
   for(let y0=Math.floor(S.minY/SEC)*SEC;y0<=S.maxY;y0+=SEC) for(let z0=0;z0<g.sz;z0+=SEC) for(let x0=0;x0<g.sx;x0+=SEC) list.push({x0,y0,z0,y1:y0+SEC-1,full:null,cut:null,cutAt:-1});
   let t0=performance.now();
@@ -1711,13 +1712,20 @@ function resetCam(){
 }
 function lookDir(){ const c=Math.cos(V3.pitch); return new THREE.Vector3(c*Math.cos(V3.yaw),Math.sin(V3.pitch),c*Math.sin(V3.yaw)); }
 function render3D(){ if(V3.pending||!V3.scene) return; V3.pending=true; requestAnimationFrame(()=>{V3.pending=false; renderNow();}); }
+/* 3D in Weltausrichtung: die Szene wird wie in deiner Welt gedreht, Treffer werden zurückgerechnet */
+let AXY=null; const axY=()=>AXY||(AXY=new THREE.Vector3(0,1,0));
+function toScene(v){ return v.clone().applyAxisAngle(axY(),vRot()*Math.PI/2); }
+function toWorld3(v){ return v.clone().applyAxisAngle(axY(),-vRot()*Math.PI/2); }
+function camRay(ndc){ const g=S.grid, d0=new THREE.Vector3(ndc.x,ndc.y,.5).unproject(V3.cam).sub(V3.cam.position).normalize(), p=toScene(V3.cam.position), d=toScene(d0);
+  return castRay(p.x+g.sx/2,p.y,p.z+g.sz/2,d.x,d.y,d.z); }
 function renderNow(){
   if(!V3.scene||!V3.pos) return;
+  if(V3.root) V3.root.rotation.y=-vRot()*Math.PI/2;
   const d=lookDir(); V3.cam.position.copy(V3.pos); V3.cam.lookAt(V3.pos.x+d.x,V3.pos.y+d.y,V3.pos.z+d.z);
   V3.renderer.render(V3.scene,V3.cam);
   const g=S.grid, fx=Math.cos(V3.yaw), fz=Math.sin(V3.yaw);
   const dir=Math.abs(fx)>Math.abs(fz)?(fx>0?t('dirE'):t('dirW')):(fz>0?t('dirS'):t('dirN'));
-  const w=wpos(Math.floor(V3.pos.x+g.sx/2),Math.floor(V3.pos.y),Math.floor(V3.pos.z+g.sz/2));
+  const sp=toScene(V3.pos), w=wpos(Math.floor(sp.x+g.sx/2),Math.floor(sp.y),Math.floor(sp.z+g.sz/2));
   $('#v3read').textContent=`X ${w[0]} · Y ${w[1]} · Z ${w[2]} · ${t('look')}: ${dir}`;
 }
 /* Steuerung */
@@ -1825,8 +1833,7 @@ window.addEventListener('blur',()=>{V3.keys.clear();V3.sprint=false;});
 function pick3D(e){ const r=V3.renderer.domElement.getBoundingClientRect(); pickAt(new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1)); }
 function pickAt(ndc){
   const tip=$('#tip3d'); if(!V3.ready){tip.hidden=true;return;}
-  const g=S.grid, dir=new THREE.Vector3(ndc.x,ndc.y,.5).unproject(V3.cam).sub(V3.cam.position).normalize();
-  const hit=castRay(V3.cam.position.x+g.sx/2,V3.cam.position.y,V3.cam.position.z+g.sz/2,dir.x,dir.y,dir.z);
+  const g=S.grid, hit=camRay(ndc);
   if(!hit){tip.hidden=true;return;}
   const w=wpos(hit.x,hit.y,hit.z); tip.textContent=`${pretty(g.palette[hit.a].name)} · X ${w[0]} Y ${w[1]} Z ${w[2]}`; tip.hidden=false;
 }
@@ -2162,7 +2169,8 @@ function renderObjMain(){
   const main=$('#objMain'); disposeObj3D();
   const o=OB.list[OB.sel];
   if(!o){ main.innerHTML=`<div class="ohint"><p>${t('obPick')}</p><p class="muted small">${t('obHowMark')}</p></div>`; return; }
-  const [w,h,d]=objW(o), wa=wpos(o.b[0],o.b[1],o.b[2]), wb=wpos(o.b[3]-1,o.b[4]-1,o.b[5]-1);
+  const [,h]=objW(o), ov0=objView(o), w=ov0.w, d=ov0.d, wp=wpos(o.b[0],o.b[1],o.b[2]), wq=wpos(o.b[3]-1,o.b[4]-1,o.b[5]-1);
+  const wa=[Math.min(wp[0],wq[0]),wp[1],Math.min(wp[2],wq[2])], wb=[Math.max(wp[0],wq[0]),wq[1],Math.max(wp[2],wq[2])];
   OB.layer=Math.max(0,Math.min(h-1,OB.layer));
   const same=OB.list.map((x,i)=>x.of===OB.sel?i:-1).filter(i=>i>=0);
   const sib=OB.list.map((x,i)=>x.cat===o.cat?i:-1).filter(i=>i>=0), si=sib.indexOf(OB.sel);
@@ -2237,12 +2245,12 @@ function bindObj2D(){
   const cv=$('#ocv'), box=$('#oView');
   const ro=new ResizeObserver(()=>drawObj2D()); ro.observe(box); OB.ro=ro;
   cv.addEventListener('pointermove',e=>{
-    const o=OB.list[OB.sel]; if(!o||!OB.cell) return; const [w,,d]=objW(o);
+    const o=OB.list[OB.sel]; if(!o||!OB.cell) return; const ov=objView(o), w=ov.w, d=ov.d;
     const x=Math.floor((e.offsetX-OB.ox)/OB.cell), z=Math.floor((e.offsetY-OB.oz)/OB.cell), tip=$('#otip');
     if(x<0||z<0||x>=w||z>=d){tip.hidden=true;return;}
-    const g=S.grid, gx=o.b[0]+x, gy=o.b[1]+OB.layer, gz=o.b[2]+z, a=g.data[(gy*g.sz+gz)*g.sx+gx];
+    const g=S.grid, [gx,gz]=ov.at(x,z), gy=o.b[1]+OB.layer, a=g.data[(gy*g.sz+gz)*g.sx+gx];
     if(!a||!P3ok(a)){tip.hidden=true;return;}
-    const e2=g.palette[a], w0=wpos(gx,gy,gz), pr=Object.entries(e2.props).filter(([k])=>!/waterlogged|powered|distance|persistent/.test(k)).map(([k,v])=>k+'='+v).join(', ');
+    const e2=g.palette[a], w0=wpos(gx,gy,gz), pr=Object.entries(propsShown(e2.props)).filter(([k])=>!/waterlogged|powered|distance|persistent/.test(k)).map(([k,v])=>k+'='+v).join(', ');
     tip.textContent=`${pretty(e2.name)}${pr?' ['+pr+']':''} · X ${w0[0]} Y ${w0[1]} Z ${w0[2]}`; tip.hidden=false;
     tip.style.left=Math.min(e.offsetX+14,box.clientWidth-tip.offsetWidth-4)+'px'; tip.style.top=(e.offsetY+16)+'px';
   });
@@ -2250,9 +2258,12 @@ function bindObj2D(){
   drawObj2D();
 }
 const P3ok=a=>S.renderable[a];
+/* Objekt in Weltausrichtung: Größe und Plan-Zelle je Ansichtszelle */
+function objView(o){ const vb=lBox2v(o.b[0],o.b[2],o.b[3],o.b[5]); return {w:vb[2]-vb[0],d:vb[3]-vb[1],at:(x,z)=>v2l(vb[0]+x,vb[1]+z)}; }
+function propsShown(props){ const r=vRot(), out={}; for(const k in props) out[k]=(r&&(k==='facing'||k==='attachment_facing'))?rotFacing(props[k],r):(r&&k==='axis'&&(r&1))?(props[k]==='x'?'z':props[k]==='z'?'x':props[k]):props[k]; return out; }
 function drawObj2D(){
   const o=OB.list[OB.sel], cv=$('#ocv'), box=$('#oView'); if(!o||!cv) return;
-  const [w,,d]=objW(o), W=box.clientWidth, H=box.clientHeight; if(!W||!H) return;
+  const ov=objView(o), w=ov.w, d=ov.d, W=box.clientWidth, H=box.clientHeight; if(!W||!H) return;
   const dpr=window.devicePixelRatio||1; cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
   const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); c.imageSmoothingEnabled=false;
   const cs=getComputedStyle(document.documentElement), col=v=>cs.getPropertyValue(v).trim();
@@ -2260,7 +2271,7 @@ function drawObj2D(){
   const cell=Math.max(4,Math.floor(Math.min((W-20)/w,(H-20)/d,48))); OB.cell=cell; OB.ox=Math.floor((W-cell*w)/2); OB.oz=Math.floor((H-cell*d)/2);
   const g=S.grid, D=g.data, y=o.b[1]+OB.layer, st=LV.on?layerStatus(y):null, L=g.sx*g.sz;
   for(let z=0;z<d;z++)for(let x=0;x<w;x++){
-    const gx=o.b[0]+x, gz=o.b[2]+z, i=gz*g.sx+gx, a=D[y*L+i], px=OB.ox+x*cell, pz=OB.oz+z*cell;
+    const [gx,gz]=ov.at(x,z), i=gz*g.sx+gx, a=D[y*L+i], px=OB.ox+x*cell, pz=OB.oz+z*cell;
     if(a&&P3ok(a)){
       const f=S.faces[a]; if(f&&f.top) c.drawImage(f.top,px,pz,cell,cell); else { const r=S.rgb[a]; c.fillStyle=`rgb(${r[0]},${r[1]},${r[2]})`; c.fillRect(px,pz,cell,cell); }
       objGlyph(c,g.palette[a],px,pz,cell);
@@ -2279,7 +2290,7 @@ function drawObj2D(){
 function objGlyph(c,e,px,pz,s){
   if(s<12) return; const p=e.props, id=e.name.replace(/^minecraft:/,'');
   const cx=px+s/2, cz=pz+s/2, r=s*.3;
-  const dir={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0]}[p.facing];
+  const dir={north:[0,-1],south:[0,1],east:[1,0],west:[-1,0]}[rotFacing(p.facing,vRot())];
   c.save(); c.lineWidth=Math.max(1.5,s/14); c.strokeStyle='rgba(0,0,0,.75)'; c.fillStyle='rgba(255,255,255,.9)';
   if(dir&&/(_stairs|_trapdoor|_door|_wall_sign|_wall_hanging_sign|_button|lever|ladder|_wall_banner|chest|furnace|dropper|dispenser|observer|piston|_glazed_terracotta|lectern|loom|stonecutter|grindstone|anvil|campfire|beehive|bee_nest|tripwire_hook|_bed|barrel|repeater|comparator|end_rod|lightning_rod|chiseled_bookshelf|decorated_pot|_fence_gate)$/.test(id)){
     const [dx,dz]=dir; c.beginPath(); c.moveTo(cx+dx*r,cz+dz*r); c.lineTo(cx-dz*r*.6-dx*r*.4,cz+dx*r*.6-dz*r*.4); c.lineTo(cx+dz*r*.6-dx*r*.4,cz-dx*r*.6-dz*r*.4); c.closePath(); c.fill(); c.stroke();
@@ -2328,7 +2339,8 @@ function buildObj3D(){
   renderObj3D();
 }
 function renderObj3D(){ const R=OB.r3; if(!R||!R.center) return; const c=Math.cos(R.pitch);
-  R.cam.position.set(R.center.x+Math.cos(R.yaw)*c*R.dist,R.center.y+Math.sin(R.pitch)*R.dist,R.center.z+Math.sin(R.yaw)*c*R.dist); R.cam.lookAt(R.center); R.r.render(R.scene,R.cam); }
+  R.root.rotation.y=-vRot()*Math.PI/2; const ctr=toWorld3(R.center);
+  R.cam.position.set(ctr.x+Math.cos(R.yaw)*c*R.dist,ctr.y+Math.sin(R.pitch)*R.dist,ctr.z+Math.sin(R.yaw)*c*R.dist); R.cam.lookAt(ctr); R.r.render(R.scene,R.cam); }
 function disposeObj3D(){ const R=OB.r3; if(OB.ro){OB.ro.disconnect();OB.ro=null;} if(!R) return; if(R.ro) R.ro.disconnect();
   while(R.root.children.length){ const m=R.root.children.pop(); m.geometry.dispose(); } R.r.dispose(); if(R.r.forceContextLoss) R.r.forceContextLoss(); R.r.domElement.remove(); OB.r3=null; }
 function objDelete(i){
@@ -2356,27 +2368,26 @@ function objShow3D(i){
   const o=OB.list[i]; if(!o) return; const g=S.grid;
   S.cut=S.maxY; document.querySelector('.tab[data-tab="d3"]').click();
   const go=()=>{ if(!V3.ready){ setTimeout(go,200); return; } applyCut(); const [w,h,d]=objW(o), cx=o.b[0]-g.sx/2+w/2, cz=o.b[2]-g.sz/2+d/2, cy=(o.b[1]+o.b[4])/2, r=Math.max(w,h,d)*1.6+8;
-    V3.pos.set(cx,cy+r*.6,cz+r); V3.yaw=-Math.PI/2; V3.pitch=-Math.atan2(r*.6,r); OB.hover=i; showObjFrame(i); render3D(); };
+    const wc=toWorld3(new THREE.Vector3(cx,cy,cz)); V3.pos.set(wc.x,cy+r*.6,wc.z+r); V3.yaw=-Math.PI/2; V3.pitch=-Math.atan2(r*.6,r); OB.hover=i; showObjFrame(i); render3D(); };
   go();
 }
 /* Hervorhebung in der großen 3D-Ansicht */
 function showObjFrame(i){
   if(!V3.scene) return;
-  if(!V3.objFrame){ V3.objFrame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:0xf2c14e,fog:false,depthTest:false})); V3.objFrame.renderOrder=5; V3.scene.add(V3.objFrame); }
+  if(!V3.objFrame){ V3.objFrame=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),new THREE.LineBasicMaterial({color:0xf2c14e,fog:false,depthTest:false})); V3.objFrame.renderOrder=5; V3.root.add(V3.objFrame); }
   const o=OB.list[i]; V3.objFrame.visible=!!o; if(!o) return;
   const g=S.grid,[w,h,d]=objW(o); V3.objFrame.scale.set(w+.1,h+.1,d+.1); V3.objFrame.position.set(o.b[0]-g.sx/2+w/2,o.b[1]+h/2,o.b[2]-g.sz/2+d/2);
 }
 function hoverObj3D(ndc){
   if(!V3.ready||!OB.list.length) return;
-  const g=S.grid, dir=new THREE.Vector3(ndc.x,ndc.y,.5).unproject(V3.cam).sub(V3.cam.position).normalize();
-  const hit=castRay(V3.cam.position.x+g.sx/2,V3.cam.position.y,V3.cam.position.z+g.sz/2,dir.x,dir.y,dir.z);
+  const hit=camRay(ndc);
   const i=hit?objAt(hit.x,hit.y,hit.z):-1;
   if(i!==OB.hover){ OB.hover=i; showObjFrame(i); render3D(); }
   const lab=$('#objHint'); if(i>=0){ lab.textContent=t('obHover',OB.list[i].name); lab.hidden=false; } else lab.hidden=true;
 }
 /* Markieren im 2D-Plan */
 function objFormOpen(rect){
-  const g=S.grid, x0=Math.min(rect.a[0],rect.b[0]), x1=Math.max(rect.a[0],rect.b[0])+1, z0=Math.min(rect.a[1],rect.b[1]), z1=Math.max(rect.a[1],rect.b[1])+1;
+  const g=S.grid, [x0,z0,x1,z1]=vBox2l(Math.min(rect.a[0],rect.b[0]),Math.min(rect.a[1],rect.b[1]),Math.max(rect.a[0],rect.b[0])+1,Math.max(rect.a[1],rect.b[1])+1);
   const b=objFitY(obG(),[x0,S.layer,z0,x1,S.layer+1,z1]);
   const cats=[...new Set(OB.list.map(o=>o.cat))];
   const f=$('#objForm'); f.hidden=false;
@@ -2399,7 +2410,7 @@ function drawObjOutlines(c,ox,oz,z,col){
   if(!OB.list.length||!$('#lObjs')||!$('#lObjs').checked) return;
   c.save(); c.lineWidth=1.5; c.font='11px '+(col('--f-body')||'sans-serif'); c.textBaseline='bottom';
   OB.list.forEach((o,i)=>{ const b=o.b; if(PV.mode==='layer'&&(S.layer<b[1]||S.layer>=b[4])) return;
-    const px=ox+b[0]*z, pz=oz+b[2]*z, w=(b[3]-b[0])*z, d=(b[5]-b[2])*z;
+    const vb=lBox2v(b[0],b[2],b[3],b[5]), px=ox+vb[0]*z, pz=oz+vb[1]*z, w=(vb[2]-vb[0])*z, d=(vb[3]-vb[1])*z;
     c.strokeStyle=i===OB.sel?'#e0559a':'#f2c14e'; c.strokeRect(px,pz,w,d);
     if(z>=2.5){ c.fillStyle='rgba(0,0,0,.6)'; const tw=c.measureText(o.name).width+6; c.fillRect(px,pz-15,tw,15); c.fillStyle='#fff'; c.fillText(o.name,px+3,pz-2); } });
   const m=PV.mark; if(m){ const x0=Math.min(m.a[0],m.b[0]), x1=Math.max(m.a[0],m.b[0])+1, z0=Math.min(m.a[1],m.b[1]), z1=Math.max(m.a[1],m.b[1])+1;
@@ -2442,6 +2453,24 @@ function wpos(lx,ly,lz){
   if(r===1){x=g.sz-1-lz;z=lx;} else if(r===2){x=g.sx-1-lx;z=g.sz-1-lz;} else if(r===3){x=lz;z=g.sx-1-lx;}
   return [o.x+x,o.y+ly,o.z+z];
 }
+/* Ansicht im 2D-Plan: immer wie in deiner Welt ausgerichtet (Norden oben), auch wenn der Plan gedreht ist.
+   Ansichts-Koordinaten = Welt minus Ecke. */
+function vRot(){ return ((S&&S.off&&S.off.rot)||0)&3; }
+function v2l(vx,vz){ const o=offOf(); return wToLocal(o.x+vx,o.z+vz); }
+function l2v(lx,lz){ const w=wpos(lx,0,lz),o=offOf(); return [w[0]-o.x,w[2]-o.z]; }
+function lBox2v(x0,z0,x1,z1){ const a=l2v(x0,z0),b=l2v(x1-1,z1-1); return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0])+1,Math.max(a[1],b[1])+1]; }
+function vBox2l(x0,z0,x1,z1){ const a=v2l(x0,z0),b=v2l(x1-1,z1-1); return [Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0])+1,Math.max(a[1],b[1])+1]; }
+function vMap(){
+  const g=S.grid,r=vRot(),key=g.sx+'x'+g.sz+'r'+r+'|'+(S.off?S.off.x+','+S.off.z:'');
+  if(PV.vmapKey===key&&PV.vmap) return PV.vmap;
+  const [VW,VH]=rotSize(), m=new Int32Array(VW*VH);
+  for(let vz=0;vz<VH;vz++)for(let vx=0;vx<VW;vx++){ let lx=vx,lz=vz;
+    if(r===1){lx=vz;lz=g.sz-1-vx;} else if(r===2){lx=g.sx-1-vx;lz=g.sz-1-vz;} else if(r===3){lx=g.sx-1-vz;lz=vx;}
+    m[vz*VW+vx]=lz*g.sx+lx; }
+  PV.vmap=m; PV.vmapKey=key; return m;
+}
+const DIR4=['north','east','south','west'];
+function rotFacing(f,r){ const i=DIR4.indexOf(f); return i<0?f:DIR4[(i+r)%4]; }
 function wToLocal(wx,wz){
   const g=S.grid,o=offOf(),r=(o.rot||0)&3,dx=wx-o.x,dz=wz-o.z;
   if(r===1) return [dz,g.sz-1-dx]; if(r===2) return [g.sx-1-dx,g.sz-1-dz]; if(r===3) return [g.sx-1-dz,dx]; return [dx,dz];
@@ -2513,7 +2542,8 @@ $('#lvWrong').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b||!S||!S.grid) return;
   const cell=+b.dataset.cell, g=S.grid, x=cell%g.sx, z=Math.floor(cell/g.sx)%g.sz, y=Math.floor(cell/(g.sx*g.sz));
   document.querySelector('.tab[data-tab="lay"]').click(); PV.mode='layer'; setLayer(y);
-  if(!PV.zoom) fitPlan(); PV.zoom=Math.max(PV.zoom,16); PV.cx=x+.5; PV.cz=z+.5; PV.measure={a:[x,z],b:[x,z]}; reqPlan();
+  const [vx,vz]=l2v(x,z);
+  if(!PV.zoom) fitPlan(); PV.zoom=Math.max(PV.zoom,16); PV.cx=vx+.5; PV.cz=vz+.5; PV.measure={a:[vx,vz],b:[vx,vz]}; reqPlan();
   $('#stage2d').scrollIntoView({behavior:'smooth',block:'center'});
 });
 $('#lvSend').onclick=async()=>{
