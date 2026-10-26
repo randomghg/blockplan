@@ -37,7 +37,7 @@ Dein Plan und dein Platz bleiben erhalten (die liegen in `config\blockplan`).
 - `/blockplan anker hier` oder `/blockplan anker x y z` – Nord-West-Ecke unten setzen
 - `/blockplan drehen <0|90|180|270>` – Plan drehen
 - `/blockplan check` – was gehört an den Block, auf den du schaust
-- `/blockplan anzeige oben|unten|chat` – wo die ✓/✗-Meldungen erscheinen (Standard: oben als Leiste, damit sie sich nicht mit einem Timer über der Hotbar überschneiden)
+- `/blockplan anzeige oben|unten|chat` – wo die ✓/✗-Meldungen erscheinen (Standard: unten über der Hotbar; die Meldung bleibt 2 Sekunden stehen, auch wenn ein Timer dort läuft, danach kommt der Timer zurück)
 - `/blockplan warnungen an|aus`
 - `/blockplan update` – Website sofort von GitHub holen
 - `/blockplan version` – Versionen und letzter Update-Stand
