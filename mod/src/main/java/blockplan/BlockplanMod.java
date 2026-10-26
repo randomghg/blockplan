@@ -35,13 +35,14 @@ public class BlockplanMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		dir = FabricLoader.getInstance().getConfigDir().resolve("blockplan");
+		Notify.load(dir);
 		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 			loadSaved();
 			WebServer.start(server);
 			Updater.check();
 		});
-		ServerLifecycleEvents.SERVER_STOPPING.register(server -> { saveTouched(); WebServer.stop(); });
-		ServerTickEvents.END_SERVER_TICK.register(server -> { Tracker.tick(server); if (server.getTickCount() % 6000 == 0) saveTouched(); });
+		ServerLifecycleEvents.SERVER_STOPPING.register(server -> { saveTouched(); Notify.clear(); WebServer.stop(); });
+		ServerTickEvents.END_SERVER_TICK.register(server -> { Tracker.tick(server); Notify.tick(server); if (server.getTickCount() % 6000 == 0) saveTouched(); });
 		UseBlockCallback.EVENT.register((player, level, hand, hit) -> {
 			if (!level.isClientSide() && player instanceof ServerPlayer sp) {
 				BlockPos p = hit.getBlockPos();
@@ -129,6 +130,12 @@ public class BlockplanMod implements ModInitializer {
 		return 1;
 	}
 
+	private static int setMode(com.mojang.brigadier.context.CommandContext<CommandSourceStack> c, Notify.Mode m) {
+		Notify.clear();
+		Notify.mode = m; Notify.save(dir);
+		return reply(c, "Meldungen ab jetzt: " + m.name().toLowerCase(), ChatFormatting.GREEN);
+	}
+
 	private static void registerCommands(CommandDispatcher<CommandSourceStack> d) {
 		d.register(Commands.literal("blockplan")
 				.executes(c -> reply(c, Tracker.summary(), ChatFormatting.AQUA))
@@ -139,6 +146,11 @@ public class BlockplanMod implements ModInitializer {
 					Updater.check().thenAccept(r -> src.getServer().execute(() -> src.sendSuccess(() -> Component.literal("Website-Update: " + r).withStyle(ChatFormatting.AQUA), false)));
 					return 1;
 				}))
+				.then(Commands.literal("anzeige")
+						.executes(c -> reply(c, "Meldungen werden angezeigt: " + Notify.mode.name().toLowerCase() + " (oben = Leiste oben, unten = über der Hotbar, chat = im Chat)", ChatFormatting.AQUA))
+						.then(Commands.literal("oben").executes(c -> setMode(c, Notify.Mode.OBEN)))
+						.then(Commands.literal("unten").executes(c -> setMode(c, Notify.Mode.UNTEN)))
+						.then(Commands.literal("chat").executes(c -> setMode(c, Notify.Mode.CHAT))))
 				.then(Commands.literal("version").executes(c -> reply(c, "Blockplan " + version() + " · Minecraft " + Assets.mcVersion() + " · Website-Update: " + Updater.lastResult, ChatFormatting.AQUA)))
 				.then(Commands.literal("anker")
 						.then(Commands.literal("hier").executes(c -> {

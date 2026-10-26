@@ -1,4 +1,4 @@
-# Blockplan 1.1.2 – Anleitung
+# Blockplan 1.1.3 – Anleitung
 
 ## Update von 1.0.x auf 1.1.0 (einmalig)
 
@@ -8,8 +8,8 @@
 4. In den Ordner klicken, bis du `gradlew.bat` siehst → oben in die Adresszeile `cmd` → Enter.
 5. `gradlew.bat build` eingeben und warten, bis „BUILD SUCCESSFUL“ kommt.
 6. Im `mods`-Ordner deines 26.3-Profils die alte `blockplan-1.0.1.jar` **löschen**.
-7. Die neue `build\libs\blockplan-1.1.2.jar` in den `mods`-Ordner kopieren (**nicht entpacken**).
-8. Minecraft starten, Welt öffnen, im Chat `/blockplan version` eingeben. Dort muss 1.1.2 stehen.
+7. Die neue `build\libs\blockplan-1.1.3.jar` in den `mods`-Ordner kopieren (**nicht entpacken**).
+8. Minecraft starten, Welt öffnen, im Chat `/blockplan version` eingeben. Dort muss 1.1.3 stehen.
 
 Dein Plan und dein Platz bleiben erhalten (die liegen in `config\blockplan`).
 
@@ -37,6 +37,7 @@ Dein Plan und dein Platz bleiben erhalten (die liegen in `config\blockplan`).
 - `/blockplan anker hier` oder `/blockplan anker x y z` – Nord-West-Ecke unten setzen
 - `/blockplan drehen <0|90|180|270>` – Plan drehen
 - `/blockplan check` – was gehört an den Block, auf den du schaust
+- `/blockplan anzeige oben|unten|chat` – wo die ✓/✗-Meldungen erscheinen (Standard: oben als Leiste, damit sie sich nicht mit einem Timer über der Hotbar überschneiden)
 - `/blockplan warnungen an|aus`
 - `/blockplan update` – Website sofort von GitHub holen
 - `/blockplan version` – Versionen und letzter Update-Stand

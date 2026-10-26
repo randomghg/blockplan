@@ -220,7 +220,7 @@ public final class Tracker {
 		String where = pos.getX() + " " + pos.getY() + " " + pos.getZ();
 		if (i < 0) {
 			if (!broke && !EMPTY.contains(idOf(s)) && !quiet)
-				pl.sendOverlayMessage(Component.literal("Laut Plan gehört hier kein Block hin (" + where + ")").withStyle(ChatFormatting.YELLOW));
+				Notify.show(pl, Component.literal("Laut Plan gehört hier kein Block hin (" + where + ")").withStyle(ChatFormatting.YELLOW), ChatFormatting.YELLOW);
 			return;
 		}
 		int before = status[i];
@@ -229,13 +229,18 @@ public final class Tracker {
 		setStatus(i, st);
 		if (quiet) return;
 		if (st == WRONG) {
-			pl.sendOverlayMessage(Component.literal("✗ Falsch bei " + where + ": hier gehört " + describe(p, i, a.rot) + " hin").withStyle(ChatFormatting.RED));
+			Notify.show(pl, Component.literal("✗ Falsch bei " + where + ": hier gehört " + describe(p, i, a.rot) + " hin").withStyle(ChatFormatting.RED), ChatFormatting.RED);
 			lvl.playSound(null, pos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.4f, 1.6f);
 		} else if (st == CORRECT && !broke) {
-			pl.sendOverlayMessage(Component.literal("✓ " + nice(p.blockId[p.pal[i]]) + " richtig · " + percent() + " fertig").withStyle(ChatFormatting.GREEN));
+			Notify.show(pl, Component.literal("✓ " + nice(p.blockId[p.pal[i]]) + " richtig · " + percent() + " fertig").withStyle(ChatFormatting.GREEN), ChatFormatting.GREEN);
 		} else if (broke && before == WRONG) {
-			pl.sendOverlayMessage(Component.literal("Falschen Block entfernt · hier gehört " + describe(p, i, a.rot) + " hin").withStyle(ChatFormatting.GOLD));
+			Notify.show(pl, Component.literal("Falschen Block entfernt · hier gehört " + describe(p, i, a.rot) + " hin").withStyle(ChatFormatting.GOLD), ChatFormatting.GOLD);
 		}
+	}
+
+	static float fraction() {
+		int n = status.length;
+		return n == 0 ? 0f : counts[CORRECT] / (float) n;
 	}
 
 	static String percent() {
